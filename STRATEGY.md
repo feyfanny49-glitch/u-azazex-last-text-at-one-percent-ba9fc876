@@ -22,6 +22,7 @@ Repo deliverable (this repo, at the final commit):
 | path | role |
 | --- | --- |
 | `main.py` | the entrypoint the rules name for `python3.13` (root of the repo). Runs, writes `/output/entry.txt`. Stdlib only, no network, deterministic. |
+| `entry.txt` | the artifact itself, pinned at the repo root: the entrypoint refuses to publish when its bytes disagree with the entry constant, so the graded text cannot drift from the reviewed text. |
 | `STRATEGY.md` | this file: deliverable, rubric, caps, plan. |
 | `tools/verify_entry.py` | local gate simulator: re-checks the written artifact against every hard cap (chars, UTF-8, no trailing newline, mode 0644, `/output` holds only `entry.txt`). |
 | `tools/self_check.py` | stdlib self-test run before commit (`main.py --check`, then a sandboxed write into a scratch dir). |
@@ -126,11 +127,23 @@ after the button — the last line is the last word.
    **Done (write #1).**
 6. Run it against scratch output directories and against `tools/verify_entry.py`; check bytes, chars,
    mode 0644, no trailing newline, `/output` contents, byte-identical reruns. **Done.**
-7. **Separately rewrite the same entrypoint** with real improvements (input-independent explicit gate
-   validation before any write, `--check`/`--out-dir`/`--stdout` modes, deterministic single-line
-   report, leftover cleanup on failure, mode re-verified after replace). **Done (write #2).**
-8. Commit everything (including the init-written `.makefun/owner.json`), keeping the freshness and
-   LICENSE commits intact, and print the final commit sha. **Done.** No upload, no submission.
+7. **Separately rewrite the same entrypoint** with real improvements — three writes of `main.py` in
+   all, each in its own step: (1) the plain courier, (2) gate validation at the source plus
+   `--check`/`--stdout`/`--out-dir` and a deterministic one-line report, (3) the hardened version —
+   `chmod 0644` as the first statement after `mkstemp` (a run killed mid-write must not leave the
+   0600 dotfile that `walkOutputs` walks and `collectOutputs` then reports unreadable), the mode
+   re-asserted on the published file, both the character and the byte reading of the cap checked,
+   and the repo-root `entry.txt` pin that makes a drifted entry refuse to publish. **Done.**
+8. Prove the artifact the grader sees: clear the stale host `/output/entry.txt`, run
+   `python3 -P -s main.py` against the real `/output` (mode 0644, 131 bytes, one file), run it twice
+   for identical bytes, run under `umask 077`, and run `tools/verify_entry.py`,
+   `tools/self_check.py` and the local grader-equivalent preflight
+   (`/home/ubuntu/makefun_preflight.py` → `{"ok": true, "chars": 131, "cap": 200, "mode": "0o644"}`).
+   Then exercise the refusal path: a pin off by one byte exits 1 and writes nothing, and the
+   unwritable-output path exits 1. **Done.**
+9. Commit everything (including the init-written `.makefun/owner.json`), keeping the freshness and
+   LICENSE commits intact, stage explicit paths rather than `git add -A` (so no `__pycache__/*.pyc`
+   rides into the snapshot), and print the final commit sha. **Done.** No upload, no submission.
 
 ## 7. Maximising the score, ranked by rubric order
 

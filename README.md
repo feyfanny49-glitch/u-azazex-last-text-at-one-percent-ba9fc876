@@ -14,6 +14,8 @@ freshness audit against the public feed are in [`STRATEGY.md`](STRATEGY.md).
 ## Layout
 
     main.py               entrypoint (python3.13, stdlib only) — writes /output/entry.txt
+    entry.txt             the artifact itself, pinned at the repo root (the entrypoint refuses to
+                          publish when its bytes and the entry constant disagree)
     tools/verify_entry.py gate simulator: re-checks every hard cap on the written artifact
     tools/self_check.py   runs the entrypoint the way the grader does, then verifies
     STRATEGY.md           deliverable, judge criteria, hard caps, plan
